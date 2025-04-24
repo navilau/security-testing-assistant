@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+  <!-- Shield background -->
+  <path d="M64 8L8 32v40c0 24 24 40 56 48 32-8 56-24 56-48V32L64 8z" fill="#4CAF50"/>
+  
+  <!-- Test tube -->
+  <path d="M64 40c-8 0-16 8-16 16s8 16 16 16 16-8 16-16-8-16-16-16zm0 24c-4 0-8-4-8-8s4-8 8-8 8 4 8 8-4 8-8 8z" fill="white"/>
+  
+  <!-- Magnifying glass -->
+  <path d="M88 88l-8-8c4-4 8-12 8-20 0-16-12-28-28-28S32 44 32 60s12 28 28 28c8 0 16-4 20-8l8 8c4 4 12 4 16 0s4-12 0-16zM44 60c0-8 8-16 16-16s16 8 16 16-8 16-16 16-16-8-16-16z" fill="white"/>
+</svg> 
