@@ -12,6 +12,16 @@ A Chrome extension that automatically detects input fields on web pages and gene
   - Path Traversal
   - Buffer Overflow
   - Timing-based attacks
+  - JWT Attacks
+  - XXE Attacks
+  - SSRF Attacks
+  - CSRF Attacks
+  - Clickjacking
+  - DOM-based Vulnerabilities
+  - CORS Attacks
+  - OAuth Attacks
+- Organized payload categories with collapsible sections
+- One-click payload submission to all visible fields
 
 ## Installation
 
@@ -28,6 +38,23 @@ A Chrome extension that automatically detects input fields on web pages and gene
    - Detected input fields
    - Field types
    - Suggested security test payloads
+
+### Selecting and Using Payloads
+
+1. **View Payload Categories**:
+   - Payloads are organized into collapsible categories
+   - Click on a category header to expand/collapse
+   - Categories include SQL Injection, XSS, Path Traversal, etc.
+
+2. **Select a Payload**:
+   - Click on any payload to select it
+   - The selected payload will be highlighted
+   - Use the "Copy" button to copy a payload to clipboard
+
+3. **Submit Payload to Fields**:
+   - After selecting a payload, the "Submit Selected Payload to All Fields" button will be enabled
+   - Click the button to automatically submit the payload to all visible input fields
+   - A success message will appear when the payload has been submitted
 
 ## Security Note
 
