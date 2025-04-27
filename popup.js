@@ -64,7 +64,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Group fields by type
     const fieldsByType = {};
-    const allPayloads = new Set();
+    const payloadsByCategory = {};
 
     results.forEach(result => {
       // Add to fields by type
@@ -73,8 +73,108 @@ document.addEventListener('DOMContentLoaded', function() {
       }
       fieldsByType[result.fieldType].push(result);
 
-      // Collect unique payloads
-      result.payloads.forEach(payload => allPayloads.add(payload));
+      // Organize payloads by category
+      result.payloads.forEach(payload => {
+        // Skip category comments
+        if (payload.startsWith('/*')) {
+          return;
+        }
+
+        // Determine category based on payload content
+        let category = 'Other';
+        if (payload.includes('script>')) {
+          category = 'XSS';
+        } else if (payload.includes('OR 1=1') || 
+                  payload.includes('UNION SELECT') || 
+                  payload.includes('SLEEP(') || 
+                  payload.includes('WAITFOR DELAY') || 
+                  payload.includes('pg_sleep') || 
+                  payload.includes('DBMS_PIPE.RECEIVE_MESSAGE') || 
+                  payload.includes('randomblob') || 
+                  payload.includes('--') || 
+                  payload.includes('/*') || 
+                  payload.includes('*/') ||
+                  payload.includes("' OR") ||
+                  payload.includes("' AND") ||
+                  payload.includes("' UNION") ||
+                  payload.includes("' SELECT") ||
+                  payload.includes("' INSERT") ||
+                  payload.includes("' UPDATE") ||
+                  payload.includes("' DELETE") ||
+                  payload.includes("' DROP") ||
+                  payload.includes("' CREATE") ||
+                  payload.includes("' ALTER")) {
+          category = 'SQL Injection';
+        } else if (payload.includes('file://')) {
+          category = 'Path Traversal';
+        } else if (payload.includes('localhost')) {
+          category = 'SSRF';
+        } else if (payload.includes('{')) {
+          category = 'JWT';
+        } else if (payload.includes('<!DOCTYPE')) {
+          category = 'XXE';
+        } else if (payload.includes('iframe')) {
+          category = 'Clickjacking';
+        } else if (payload.includes('form')) {
+          category = 'CSRF';
+        } else if (payload.includes('javascript:')) {
+          category = 'DOM-based';
+        } else if (payload.includes('oauth')) {
+          category = 'OAuth';
+        } else if (payload.includes('origin')) {
+          category = 'CORS';
+        }
+
+        if (!payloadsByCategory[category]) {
+          payloadsByCategory[category] = new Set();
+        }
+        payloadsByCategory[category].add(payload);
+      });
+
+      // Remove any SQL injection payloads from Other category
+      if (payloadsByCategory['Other']) {
+        const otherPayloads = Array.from(payloadsByCategory['Other']);
+        const sqlInjectionPayloads = new Set();
+        
+        otherPayloads.forEach(payload => {
+          if (payload.includes('OR 1=1') || 
+              payload.includes('UNION SELECT') || 
+              payload.includes('SLEEP(') || 
+              payload.includes('WAITFOR DELAY') || 
+              payload.includes('pg_sleep') || 
+              payload.includes('DBMS_PIPE.RECEIVE_MESSAGE') || 
+              payload.includes('randomblob') || 
+              payload.includes('--') || 
+              payload.includes('/*') || 
+              payload.includes('*/') ||
+              payload.includes("' OR") ||
+              payload.includes("' AND") ||
+              payload.includes("' UNION") ||
+              payload.includes("' SELECT") ||
+              payload.includes("' INSERT") ||
+              payload.includes("' UPDATE") ||
+              payload.includes("' DELETE") ||
+              payload.includes("' DROP") ||
+              payload.includes("' CREATE") ||
+              payload.includes("' ALTER")) {
+            sqlInjectionPayloads.add(payload);
+            payloadsByCategory['Other'].delete(payload);
+          }
+        });
+
+        // Add SQL injection payloads to SQL Injection category
+        if (!payloadsByCategory['SQL Injection']) {
+          payloadsByCategory['SQL Injection'] = new Set();
+        }
+        sqlInjectionPayloads.forEach(payload => {
+          payloadsByCategory['SQL Injection'].add(payload);
+        });
+
+        // Remove Other category if empty
+        if (payloadsByCategory['Other'].size === 0) {
+          delete payloadsByCategory['Other'];
+        }
+      }
     });
 
     // Display fields grouped by type
@@ -101,24 +201,57 @@ document.addEventListener('DOMContentLoaded', function() {
       fieldsList.appendChild(typeSection);
     });
 
-    // Display all unique payloads
-    const payloadsSection = document.createElement('ul');
-    payloadsSection.className = 'payload-list';
-    
-    Array.from(allPayloads).forEach(payload => {
-      const payloadItem = document.createElement('li');
-      payloadItem.className = 'payload-item';
-      payloadItem.setAttribute('data-payload', payload);
+    // Display payloads grouped by category
+    Object.entries(payloadsByCategory).forEach(([category, payloads]) => {
+      const categorySection = document.createElement('div');
+      categorySection.className = 'payload-category';
       
-      payloadItem.innerHTML = `
-        <span class="payload-text">${payload}</span>
-        <button class="copy-button" data-payload="${payload}">Copy</button>
+      const categoryHeader = document.createElement('div');
+      categoryHeader.className = 'category-header';
+      categoryHeader.innerHTML = `
+        <span>${category}</span>
+        <span class="category-icon">▶</span>
       `;
       
-      payloadsSection.appendChild(payloadItem);
+      const categoryContent = document.createElement('div');
+      categoryContent.className = 'category-content';
+      
+      const payloadsList = document.createElement('ul');
+      payloadsList.className = 'payload-list';
+      
+      Array.from(payloads).forEach(payload => {
+        const payloadItem = document.createElement('li');
+        payloadItem.className = 'payload-item';
+        payloadItem.setAttribute('data-payload', payload);
+        
+        // Create a text node for the payload to prevent HTML interpretation
+        const payloadText = document.createElement('span');
+        payloadText.className = 'payload-text';
+        payloadText.textContent = payload;
+        
+        const copyButton = document.createElement('button');
+        copyButton.className = 'copy-button';
+        copyButton.setAttribute('data-payload', payload);
+        copyButton.textContent = 'Copy';
+        
+        payloadItem.appendChild(payloadText);
+        payloadItem.appendChild(copyButton);
+        payloadsList.appendChild(payloadItem);
+      });
+      
+      categoryContent.appendChild(payloadsList);
+      categorySection.appendChild(categoryHeader);
+      categorySection.appendChild(categoryContent);
+      
+      // Add click handler for category header
+      categoryHeader.addEventListener('click', () => {
+        const isExpanded = categoryContent.classList.contains('expanded');
+        categoryContent.classList.toggle('expanded');
+        categoryHeader.querySelector('.category-icon').classList.toggle('expanded');
+      });
+      
+      document.getElementById('payloadsList').appendChild(categorySection);
     });
-    
-    payloadsList.appendChild(payloadsSection);
 
     // Add click handlers for payload items
     document.querySelectorAll('.payload-item').forEach(item => {

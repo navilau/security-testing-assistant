@@ -153,6 +153,38 @@
       background-color: #ffebee;
       border-radius: 4px;
     }
+    .category-header {
+      background-color: #f0f0f0;
+      padding: 8px;
+      margin: 5px 0;
+      cursor: pointer;
+      border-radius: 4px;
+      font-weight: bold;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .category-header:hover {
+      background-color: #e0e0e0;
+    }
+    .category-content {
+      display: none;
+      padding-left: 15px;
+      border-left: 2px solid #ddd;
+      margin-left: 10px;
+    }
+    .category-content.expanded {
+      display: block;
+    }
+    .category-icon {
+      transition: transform 0.3s ease;
+    }
+    .category-icon.expanded {
+      transform: rotate(90deg);
+    }
+    .payload-category {
+      margin-bottom: 10px;
+    }
   </style>
 </head>
 <body>
